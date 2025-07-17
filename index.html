@@ -1,1 +1,190 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Liste Produits</title>
+  <style>
+    
+.entete-colonne {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.bloc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 5px 0;
+  font-weight: bold;
+  color: #333;
+}
+
+.logo {
+  width: 1000px;
+  height: auto;
+}
+
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      width: 60%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    @media screen and (max-width: 768px) {
+      .container {
+        width: 95%;
+      }
+    }
+
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
+
+    #recherche {
+      width: 100%;
+      padding: 10px;
+      margin: 20px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #fff;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .prix {
+      float: right;
+      font-weight: bold;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  
+<div class="entete-colonne">
+  <div class="bloc">
+    <img src="Infos.png" alt="Infos" class="logo">
+    <div>Infos</div>
+  </div>
+  <div class="bloc">
+    <img src="Boulangerie.png" alt="Boulangerie" class="logo">
+    <div>Boulangerie</div>
+  </div>
+</div>
+
+  <div class="container">
+    <h1>🛒 Liste Produits </h1>
+    <input type="text" id="recherche" placeholder="Rechercher un produit...">
+    <ul id="liste"></ul>
+  </div>
+
+  <script>
+    var produits = [];
+
+    function afficherProduits(filtre) {
+      var ul = document.getElementById('liste');
+      ul.innerHTML = '';
+      for (var i = 0; i < produits.length; i++) {
+        var produit = produits[i];
+        if (produit.designation.toLowerCase().indexOf(filtre.toLowerCase()) !== -1) {
+          var li = document.createElement('li');
+          li.innerHTML = produit.designation + '<span class="prix">' + produit.prix + '</span>';
+          ul.appendChild(li);
+        }
+      }
+    }
+
+    function trierProduitsParNom() {
+      produits.sort(function (a, b) {
+        return a.designation.localeCompare(b.designation, 'fr', { sensitivity: 'base' });
+      });
+    }
+
+    document.getElementById('recherche').addEventListener('input', function () {
+      afficherProduits(this.value);
+    });
+
+    function chargerProduitsAvecFetch() {
+      fetch('bd_produit.txt?t=' + new Date().getTime())
+        .then(function(response) { return response.text(); })
+        .then(function(data) {
+          traiterDonnees(data);
+        })
+        .catch(function() {
+          console.warn('fetch échoué, passage à XMLHttpRequest');
+          chargerProduitsAvecXHR();
+        });
+    }
+
+    function chargerProduitsAvecXHR() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'bd_produit.txt?t=' + new Date().getTime(), true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          traiterDonnees(xhr.responseText);
+        }
+      };
+      xhr.send();
+    }
+function traiterDonnees(texte) {
+  var lignes = texte.trim().split('\n');
+  produits = [];
+  for (var i = 0; i < lignes.length; i++) {
+    var parts = lignes[i].split('|');
+    if (parts.length >= 4) {
+      var designationComplete = parts[1].trim() + ' ' + parts[2].trim();
+
+      // Conversion du prix au format float (en remplaçant la virgule)
+      var prixFloat = parseFloat(parts[3].replace(',', '.'));
+
+      // Format monétaire français (euro)
+      var prixFormate = prixFloat.toLocaleString('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+      });
+
+      produits.push({
+        designation: designationComplete,
+        prix: prixFormate
+      });
+    }
+  }
+  trierProduitsParNom();
+  afficherProduits('');
+}
+
+
+    // Détection automatique : fetch ou fallback
+    if (window.fetch) {
+      chargerProduitsAvecFetch();
+    } else {
+      console.warn('fetch non supporté, utilisation de XMLHttpRequest');
+      chargerProduitsAvecXHR();
+    }
+  </script>
+
+</body>
+</html>
